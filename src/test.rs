@@ -351,9 +351,10 @@ fn import_same_identity_multiple_times() {
     ));
 
     let cert = keys.server.cert_and_key.cert.to_pem().into_bytes();
-    let key = key_to_pem(keys.server.cert_and_key.key.get_der()).into_bytes();
-    let _ = p!(Identity::from_pkcs8(&cert, &key));
-    let _ = p!(Identity::from_pkcs8(&cert, &key));
+    let key = key_to_pem(keys.server.cert_and_key.key.get_der());
+    let key = topk8::from_pkcs1_pem(&key).unwrap();
+    let _ = p!(Identity::from_pkcs8(&cert, key.as_bytes()));
+    let _ = p!(Identity::from_pkcs8(&cert, key.as_bytes()));
 }
 
 #[test]
@@ -429,9 +430,10 @@ fn alpn_google_none() {
 fn server_pkcs8() {
     let keys = test_cert_gen::keys();
     let cert = keys.server.cert_and_key.cert.to_pem().into_bytes();
-    let key = key_to_pem(keys.server.cert_and_key.key.get_der()).into_bytes();
+    let key = key_to_pem(keys.server.cert_and_key.key.get_der());
 
-    let ident = Identity::from_pkcs8(&cert, &key).unwrap();
+    let key = topk8::from_pkcs1_pem(&key).unwrap();
+    let ident = Identity::from_pkcs8(&cert, key.as_bytes()).unwrap();
     let ident2 = ident.clone();
     let builder = p!(TlsAcceptor::new(ident));
 
@@ -476,8 +478,9 @@ fn server_pkcs8() {
 fn two_servers() {
     let keys1 = test_cert_gen::gen_keys();
     let cert = keys1.server.cert_and_key.cert.to_pem().into_bytes();
-    let key = key_to_pem(keys1.server.cert_and_key.key.get_der()).into_bytes();
-    let identity = p!(Identity::from_pkcs8(&cert, &key));
+    let key = key_to_pem(keys1.server.cert_and_key.key.get_der());
+    let key = topk8::from_pkcs1_pem(&key).unwrap();
+    let identity = p!(Identity::from_pkcs8(&cert, key.as_bytes()));
     let builder = TlsAcceptor::builder(identity);
     let builder = p!(builder.build());
 
@@ -497,8 +500,9 @@ fn two_servers() {
 
     let keys2 = test_cert_gen::gen_keys();
     let cert = keys2.server.cert_and_key.cert.to_pem().into_bytes();
-    let key = key_to_pem(keys2.server.cert_and_key.key.get_der()).into_bytes();
-    let identity = p!(Identity::from_pkcs8(&cert, &key));
+    let key = key_to_pem(keys2.server.cert_and_key.key.get_der());
+    let key = topk8::from_pkcs1_pem(&key).unwrap();
+    let identity = p!(Identity::from_pkcs8(&cert, key.as_bytes()));
     let builder = TlsAcceptor::builder(identity);
     let builder = p!(builder.build());
 
