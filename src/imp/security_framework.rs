@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate rand;
 extern crate security_framework;
 extern crate security_framework_sys;
 extern crate tempfile;
@@ -91,7 +92,7 @@ impl Identity {
 
         let dir = TempDir::new().map_err(|_| Error(base::Error::from(errSecIO)))?;
         let keychain = keychain::CreateOptions::new()
-            .password("password")
+            .password(&random_password())
             .create(dir.path().join("identity.keychain"))?;
 
         let mut items = SecItems::default();
@@ -178,6 +179,16 @@ impl Identity {
         let imports = Pkcs12ImportOptions::new().passphrase(pass).import(buf)?;
         Ok(imports)
     }
+}
+
+fn random_password() -> String {
+    use self::rand::{distributions::Alphanumeric, Rng};
+
+    self::rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .map(char::from)
+        .collect()
 }
 
 #[derive(Clone)]
