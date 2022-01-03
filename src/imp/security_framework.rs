@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate rand;
 extern crate security_framework;
 extern crate security_framework_sys;
 extern crate tempfile;
@@ -8,6 +7,7 @@ use self::security_framework::base;
 use self::security_framework::certificate::SecCertificate;
 use self::security_framework::identity::SecIdentity;
 use self::security_framework::import_export::{ImportedIdentity, Pkcs12ImportOptions};
+use self::security_framework::random::SecRandom;
 use self::security_framework::secure_transport::{
     self, ClientBuilder, SslConnectionType, SslContext, SslProtocol, SslProtocolSide,
 };
@@ -92,7 +92,7 @@ impl Identity {
 
         let dir = TempDir::new().map_err(|_| Error(base::Error::from(errSecIO)))?;
         let keychain = keychain::CreateOptions::new()
-            .password(&random_password())
+            .password(&random_password()?)
             .create(dir.path().join("identity.keychain"))?;
 
         let mut items = SecItems::default();
@@ -181,14 +181,17 @@ impl Identity {
     }
 }
 
-fn random_password() -> String {
-    use self::rand::{distributions::Alphanumeric, Rng};
-
-    self::rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .map(char::from)
-        .collect()
+fn random_password() -> Result<String, Error> {
+    use std::fmt::Write;
+    let mut bytes = [0_u8; 10];
+    SecRandom::default()
+        .copy_bytes(&mut bytes)
+        .map_err(|_| Error(base::Error::from(errSecIO)))?;
+    let mut s = String::with_capacity(2 * bytes.len());
+    for byte in bytes {
+        write!(s, "{:02X}", byte).map_err(|_| Error(base::Error::from(errSecIO)))?;
+    }
+    Ok(s)
 }
 
 #[derive(Clone)]
